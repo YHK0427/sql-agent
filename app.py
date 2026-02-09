@@ -142,7 +142,7 @@ def generate_sql(db_name):
     
     data = request.get_json()
     user_question = data.get('question', '').strip()
-    model_name = data.get('model', 'gemini-pro')  # 모델 선택 추가
+    model_name = data.get('model', 'gemini-2.0-flash-lite')  # 모델 선택 추가
     
     if not user_question:
         return jsonify({'success': False, 'message': '질문을 입력해주세요.'}), 400

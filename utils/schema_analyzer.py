@@ -78,7 +78,7 @@ def get_database_schema(db_path):
         'table_info': table_info
     }
 
-def analyze_schema_with_llm(db_path, model_name='gemini-pro'):
+def analyze_schema_with_llm(db_path, model_name='gemini-2.0-flash'):
     """
     LLM을 사용해 DB 스키마를 분석하고 설명 생성 (캐싱 적용)
     
@@ -129,7 +129,7 @@ def analyze_schema_with_llm(db_path, model_name='gemini-pro'):
     
     return analysis
 
-def suggest_queries_with_llm(db_path, model_name='gemini-pro'):
+def suggest_queries_with_llm(db_path, model_name='gemini-2.0-flash'):
     """
     LLM을 사용해 이 DB에서 할 수 있는 유용한 질문 예시 생성 (캐싱 적용)
     

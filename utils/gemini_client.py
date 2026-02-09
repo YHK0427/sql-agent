@@ -4,11 +4,11 @@ import os
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Gemini API 설정
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-
+print(f"GEMINI_API_KEY: {GEMINI_API_KEY}")
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY가 .env 파일에 설정되지 않았습니다.")
 
@@ -16,12 +16,12 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 # 사용 가능한 모델 목록
 AVAILABLE_MODELS = {
-    'gemini-pro': '빠르고 효율적 (권장)',
-    'gemini-1.5-pro-latest': '최신 고성능 모델',
-    'gemini-1.5-flash-latest': '초고속 응답'
+    'gemini-2.5-flash': '빠르고 효율적 (권장)',
+    'gemini-2.5-flash-lite': '최신 고성능 모델',
+    'gemini-2.0-flash-lite': '초고속 응답'
 }
 
-def ask_gemini(prompt, model_name="gemini-pro", temperature=0.7):
+def ask_gemini(prompt, model_name="gemini-2.5-flash", temperature=0.7):
     """
     Gemini API에 프롬프트를 보내고 응답을 받는 함수
     

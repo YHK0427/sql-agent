@@ -4,7 +4,7 @@ import re
 from utils.gemini_client import ask_gemini
 from utils.schema_analyzer import get_database_schema
 
-def generate_sql_from_question(db_path, user_question, model_name='gemini-pro'):
+def generate_sql_from_question(db_path, user_question, model_name='gemini-2.0-flash'):
     """
     자연어 질문을 SQL 쿼리로 변환
     

@@ -9,19 +9,21 @@ AI 기반 투명한 SQL 분석 플랫폼 - LLM을 활용한 자연어 기반 데
 
 ## 📌 프로젝트 개요
 
-Glass-Box SQL Agent는 **"투명성(Transparency)"**을 핵심 가치로 하는 AI 기반 SQL 쿼리 생성 도구입니다. 
-일반적인 블랙박스 AI와 달리, **LLM의 사고 과정(Chain-of-Thought)과 생성된 SQL을 모두 공개**하여 사용자가 결과를 검증하고 신뢰할 수 있도록 설계되었습니다.
+Glass-Box SQL Agent는 "투명성(Transparency)"을 핵심 가치로 하는 AI 기반 SQL 쿼리 생성 도구입니다. 
+일반적인 블랙박스 AI와 달리, LLM의 사고 과정(Chain-of-Thought)과 생성된 SQL을 모두 공개하여 사용자가 결과를 검증하고 신뢰할 수 있도록 설계되었습니다.
 
 ### 🎯 핵심 기능
 
-- **🤖 자연어 → SQL 변환**: Google Gemini를 활용한 정확한 쿼리 생성
-- **📊 스키마 기반 분석**: 동적 스키마 주입으로 환각(Hallucination) 최소화
-- **💡 인텔리전트 추천**: DB 구조를 분석해 유용한 질문 자동 제안
-- **👁️ 투명한 프로세스**: AI의 추론 과정과 생성된 SQL 실시간 공개
-- **🛡️ Human-in-the-Loop**: 사용자 검증 후 실행하는 안전장치
-- **📜 쿼리 히스토리**: 과거 질문/SQL 저장 및 재사용
-- **📥 데이터 내보내기**: CSV/Excel 형식 지원
-- **🗂️ 스키마 시각화**: Mermaid.js 기반 ER 다이어그램
+- 🤖 자연어 → SQL 변환: Google Gemini를 활용한 정확한 쿼리 생성
+- 🎛️ 다중 모델 지원: gemini-2.0-flash, gemini-2.5-flash 등 모델 선택 가능
+- 📊 스키마 기반 분석: 동적 스키마 주입으로 환각(Hallucination) 최소화
+- ⚡ 스마트 캐싱: 스키마 분석 결과 캐싱으로 토큰 절약 (DB 변경 시 자동 재분석)
+- 💡 인텔리전트 추천: DB 구조를 분석해 유용한 질문 자동 제안
+- 👁️ 투명한 프로세스: AI의 추론 과정과 생성된 SQL 실시간 공개
+- 🛡️ Human-in-the-Loop: 사용자 검증 후 실행하는 안전장치
+- 📜 쿼리 히스토리: 과거 질문/SQL 저장 및 재사용 + 북마크 기능
+- 📥 데이터 내보내기: CSV/Excel 형식 지원
+- 🗂️ 스키마 시각화: Mermaid.js 기반 ER 다이어그램 (확대 뷰)
 
 ---
 
@@ -143,7 +145,8 @@ sql-agent/
 |------|------|
 | **Backend** | Flask, Python 3.8+ |
 | **Database** | SQLite |
-| **LLM** | Google Gemini API |
+| **LLM** | Google Gemini API (Multi-Model) |
+| **Caching** | JSON-based Schema Cache |
 | **Frontend** | Vanilla JavaScript, Pretendard Font |
 | **Visualization** | Mermaid.js |
 | **Export** | openpyxl (Excel), csv (CSV) |
@@ -158,8 +161,8 @@ sql-agent/
 - 모던 다크 테마 UI
 
 ### 2. 대시보드
-- **좌측 사이드바**: 쿼리 히스토리
-- **메인 영역**:
+- 좌측 사이드바: 쿼리 히스토리
+- 메인 영역:
   - DB 구조 자동 분석
   - AI 추천 질문
   - 자연어 입력 → SQL 생성
@@ -218,20 +221,20 @@ prompt = f"""
 ## 📊 샘플 데이터베이스
 
 ### 1. E-Commerce DB
-- **테이블**: Users, Products, Orders
-- **샘플 질문**:
+- 테이블: Users, Products, Orders
+- 샘플 질문:
   - "지난 30일간 가장 많이 팔린 상품 TOP 5는?"
   - "VIP 고객의 평균 주문 금액은?"
 
 ### 2. HR Management DB
-- **테이블**: Employees, Departments, Salaries
-- **샘플 질문**:
+- 테이블: Employees, Departments, Salaries
+- 샘플 질문:
   - "부서별 평균 연봉은?"
   - "입사한 지 3년 이상 된 직원 수는?"
 
 ### 3. Finance DB
-- **테이블**: Accounts, Transactions
-- **샘플 질문**:
+- 테이블: Accounts, Transactions
+- 샘플 질문:
   - "이번 달 총 지출은?"
   - "비용 항목별 합계는?"
 
@@ -240,19 +243,19 @@ prompt = f"""
 ## 🛠️ 개발 배경 및 학습 포인트
 
 ### LLMOps 관점
-- **동적 스키마 주입**: RAG의 기초 개념 적용
-- **Few-shot Learning**: 프롬프트에 예시 포함으로 정확도 향상
-- **출력 파싱**: XML 태그 기반 구조화된 응답 처리
+- 동적 스키마 주입: RAG의 기초 개념 적용
+- Few-shot Learning: 프롬프트에 예시 포함으로 정확도 향상
+- 출력 파싱: XML 태그 기반 구조화된 응답 처리
 
 ### 엔지니어링 관점
-- **3-Tier Architecture**: Presentation - Application - Data 분리
-- **RESTful API 설계**: `/api/` 엔드포인트 표준화
-- **상태 관리**: SQLite 기반 히스토리 영구 저장
+- 3-Tier Architecture: Presentation - Application - Data 분리
+- RESTful API 설계: `/api/` 엔드포인트 표준화
+- 상태 관리: SQLite 기반 히스토리 영구 저장
 
 ### UX/AX 관점
-- **설명 가능한 AI(XAI)**: 사고 과정 공개로 신뢰성 확보
-- **Human-in-the-Loop**: 실행 전 사용자 검증 단계 필수화
-- **점진적 공개**: 로딩 상태 → 결과 → 상세 정보 순차 표시
+- 설명 가능한 AI(XAI): 사고 과정 공개로 신뢰성 확보
+- Human-in-the-Loop: 실행 전 사용자 검증 단계 필수화
+- 점진적 공개: 로딩 상태 → 결과 → 상세 정보 순차 표시
 
 ---
 
@@ -267,17 +270,12 @@ prompt = f"""
 
 ---
 
-## 📝 라이선스
-
-MIT License
-
----
 
 ## 👤 개발자
 
-**[Your Name]**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Email: your.email@example.com
+[Your Name]
+- GitHub: [@YHK0427](https://github.com/YHK0427)
+- Email: bleacj10905@gmail.com
 
 ---
 
@@ -290,48 +288,6 @@ MIT License
 
 ---
 
-**⭐ 이 프로젝트가 도움이 되었다면 Star를 눌러주세요!**
+⭐ 이 프로젝트가 도움이 되었다면 Star를 눌러주세요!
 ```
 
-**→ 프로젝트 루트에 `README.md` 파일 만들고 이걸 넣어줘.**
-
----
-
-## 추가: `.gitignore` 최종 확인
-```
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-venv/
-env/
-ENV/
-
-# Flask
-instance/
-.webassets-cache
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# 환경 변수
-.env
-.env.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# 로그
-*.log

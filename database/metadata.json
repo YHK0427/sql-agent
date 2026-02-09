@@ -8,5 +8,10 @@
     "name": "HR Management",
     "description": "인사관리 데이터베이스",
     "icon": "👥"
+  },
+  "accounts_data": {
+    "name": "재무 정보",
+    "description": "재무 정보",
+    "icon": "😃"
   }
 }
