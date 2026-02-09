@@ -142,12 +142,13 @@ def generate_sql(db_name):
     
     data = request.get_json()
     user_question = data.get('question', '').strip()
+    model_name = data.get('model', 'gemini-pro')  # 모델 선택 추가
     
     if not user_question:
         return jsonify({'success': False, 'message': '질문을 입력해주세요.'}), 400
     
     db_path = databases[db_name]['file']
-    result = generate_sql_from_question(db_path, user_question)
+    result = generate_sql_from_question(db_path, user_question, model_name)
     
     return jsonify({
         'success': True,
@@ -297,7 +298,20 @@ def get_schema_diagram(db_name):
     diagram = generate_schema_diagram(db_path)
     
     return jsonify({'success': True, 'diagram': diagram})
-
-
+@app.route('/api/clear_cache/<db_name>', methods=['POST'])
+def clear_schema_cache(db_name):
+    """스키마 캐시 초기화"""
+    from utils.schema_analyzer import clear_cache
+    
+    try:
+        clear_cache(db_name)
+        return jsonify({'success': True, 'message': f'{db_name} 캐시가 초기화되었습니다.'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+@app.route('/api/models')
+def get_models():
+    """사용 가능한 모델 목록"""
+    from utils.gemini_client import get_available_models
+    return jsonify({'success': True, 'models': get_available_models()})
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

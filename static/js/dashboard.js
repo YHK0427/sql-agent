@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSchemaAnalysis();
     loadSuggestedQueries();
     loadHistory();
-    
+    loadModels();
     // 이벤트 리스너 등록
     document.getElementById('generate-sql-btn').addEventListener('click', generateSQL);
     document.getElementById('execute-sql-btn').addEventListener('click', executeSQL);
@@ -73,13 +73,20 @@ async function loadHistory() {
                     minute: '2-digit'
                 });
                 
+                const bookmarkIcon = item.is_bookmarked ? '⭐' : '☆';
+                
                 html += `
-                    <div class="history-item" onclick='loadFromHistory(${JSON.stringify(item.question)}, ${JSON.stringify(item.sql_query)})'>
-                        <div class="history-question">${escapeHtml(item.question)}</div>
-                        <div class="history-meta">
-                            <span>${timeStr}</span>
-                            <span>${item.result_rows}행</span>
+                    <div class="history-item">
+                        <div class="history-content" onclick='loadFromHistory(${JSON.stringify(item.question)}, ${JSON.stringify(item.sql_query)})'>
+                            <div class="history-question">${escapeHtml(item.question)}</div>
+                            <div class="history-meta">
+                                <span>${timeStr}</span>
+                                <span>${item.result_rows}행</span>
+                            </div>
                         </div>
+                        <button class="bookmark-btn" onclick="toggleBookmark(${item.id}, event)" title="북마크">
+                            ${bookmarkIcon}
+                        </button>
                     </div>
                 `;
             });
@@ -89,6 +96,21 @@ async function loadHistory() {
         }
     } catch (error) {
         container.innerHTML = '<div class="loading">로딩 실패</div>';
+    }
+}
+
+// ========== 북마크 토글 ==========
+async function toggleBookmark(historyId, event) {
+    event.stopPropagation();
+    
+    try {
+        const data = await apiRequest(`/api/bookmark/${historyId}`, 'POST');
+        
+        if (data.success) {
+            loadHistory(); // 히스토리 새로고침
+        }
+    } catch (error) {
+        console.error('북마크 실패:', error);
     }
 }
 
@@ -113,8 +135,10 @@ function loadFromHistory(question, sql) {
 }
 
 // ========== SQL 생성 ==========
+// ========== SQL 생성 ==========
 async function generateSQL() {
     const question = document.getElementById('user-query').value.trim();
+    const model = document.getElementById('model-select').value;  // 모델 선택
     
     if (!question) {
         alert('질문을 입력해주세요.');
@@ -125,7 +149,10 @@ async function generateSQL() {
     setButtonLoading('generate-sql-btn', true, 'generate-btn-text', 'generate-spinner');
     
     try {
-        const data = await apiRequest(`/api/generate_sql/${dbName}`, 'POST', { question });
+        const data = await apiRequest(`/api/generate_sql/${dbName}`, 'POST', { 
+            question,
+            model  // 모델 전달
+        });
         
         if (data.success) {
             currentSQL = data.sql;
@@ -147,7 +174,6 @@ async function generateSQL() {
         setButtonLoading('generate-sql-btn', false, 'generate-btn-text', 'generate-spinner');
     }
 }
-
 // ========== SQL 실행 ==========
 async function executeSQL() {
     if (!currentSQL) {
@@ -269,5 +295,25 @@ async function loadSchemaDiagram() {
         }
     } catch (error) {
         container.innerHTML = '<div class="loading" style="color: var(--accent-danger);">오류 발생</div>';
+    }
+}
+
+async function loadModels() {
+    try {
+        const data = await apiRequest('/api/models');
+        
+        if (data.success) {
+            const select = document.getElementById('model-select');
+            select.innerHTML = '';
+            
+            for (const [key, description] of Object.entries(data.models)) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `${key} - ${description}`;
+                select.appendChild(option);
+            }
+        }
+    } catch (error) {
+        console.error('모델 목록 로드 실패:', error);
     }
 }

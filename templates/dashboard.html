@@ -59,6 +59,13 @@
         <!-- 쿼리 입력 -->
         <section class="content-section">
             <h3 class="section-title">🔍 질문하기</h3>
+                        <!-- 모델 선택 추가 -->
+            <div class="model-selector">
+                <label for="model-select">사용 모델:</label>
+                <select id="model-select">
+                    <option value="gemini-pro">Gemini Pro (권장)</option>
+                </select>
+            </div>
             <div class="query-input-card">
                 <textarea id="user-query" placeholder="예: 지난달 매출 TOP 5 상품은?" rows="3"></textarea>
                 <button class="btn btn-primary" id="generate-sql-btn">

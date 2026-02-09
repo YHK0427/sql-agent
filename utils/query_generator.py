@@ -4,13 +4,14 @@ import re
 from utils.gemini_client import ask_gemini
 from utils.schema_analyzer import get_database_schema
 
-def generate_sql_from_question(db_path, user_question):
+def generate_sql_from_question(db_path, user_question, model_name='gemini-pro'):
     """
     자연어 질문을 SQL 쿼리로 변환
     
     Args:
         db_path: DB 파일 경로
         user_question: 사용자의 자연어 질문
+        model_name: 사용할 LLM 모델
     
     Returns:
         dict: {
@@ -46,7 +47,7 @@ FROM ...
 - SQLite 문법을 사용하세요
 """
     
-    response = ask_gemini(prompt)
+    response = ask_gemini(prompt, model_name=model_name)  # 모델명 전달
     
     # reasoning과 sql 파싱
     reasoning_match = re.search(r'<reasoning>(.*?)</reasoning>', response, re.DOTALL)
@@ -59,7 +60,6 @@ FROM ...
         'reasoning': reasoning,
         'sql': sql
     }
-
 def execute_sql(db_path, sql_query):
     """
     SQL 쿼리를 실행하고 결과 반환

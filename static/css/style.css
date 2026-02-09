@@ -6,27 +6,27 @@
 }
 
 :root {
-    /* 다크 테마 색상 */
-    --bg-primary: #0a0a0f;
-    --bg-secondary: #16161d;
-    --bg-tertiary: #1e1e28;
-    --bg-card: #1a1a24;
+    /* 다크 테마 색상 - 가독성 개선 */
+    --bg-primary: #0f0f16;
+    --bg-secondary: #1a1a24;
+    --bg-tertiary: #24242e;
+    --bg-card: #2a2a38;
     
-    /* 텍스트 색상 */
-    --text-primary: #e4e4e7;
-    --text-secondary: #a1a1aa;
-    --text-muted: #71717a;
+    /* 텍스트 색상 - 더 밝게 */
+    --text-primary: #f4f4f5;
+    --text-secondary: #d4d4d8;
+    --text-muted: #a1a1aa;
     
     /* 액센트 색상 */
-    --accent-primary: #8b5cf6;
-    --accent-secondary: #ec4899;
-    --accent-success: #10b981;
-    --accent-warning: #f59e0b;
-    --accent-danger: #ef4444;
+    --accent-primary: #a78bfa;
+    --accent-secondary: #f472b6;
+    --accent-success: #34d399;
+    --accent-warning: #fbbf24;
+    --accent-danger: #f87171;
     
     /* 그라디언트 */
-    --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-    --gradient-card: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+    --gradient-primary: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+    --gradient-card: linear-gradient(135deg, rgba(167, 139, 250, 0.15) 0%, rgba(244, 114, 182, 0.15) 100%);
     
     /* 그림자 */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
@@ -98,7 +98,13 @@ body {
     color: var(--text-secondary);
     font-weight: 400;
 }
-
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
 /* DB 그리드 */
 .db-grid {
     display: grid;
@@ -108,7 +114,7 @@ body {
 
 .db-card {
     background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);  /* 0.05 → 0.1 */
     border-radius: 16px;
     padding: 1.5rem;
     cursor: pointer;
@@ -481,27 +487,26 @@ body {
     color: var(--text-primary);
     transform: rotate(180deg);
 }
-
-.history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: calc(100vh - 400px);
-    overflow-y: auto;
-}
-
 .history-item {
     background: var(--bg-tertiary);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     padding: 0.75rem;
-    cursor: pointer;
     transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .history-item:hover {
     background: var(--bg-card);
     border-color: rgba(139, 92, 246, 0.3);
+}
+
+.history-content {
+    flex: 1;
+    cursor: pointer;
+    min-width: 0; /* 텍스트 오버플로우 방지 */
 }
 
 .history-question {
@@ -511,7 +516,6 @@ body {
     color: var(--text-primary);
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;                 /* 4. 보여줄 줄 수 (표준 - 경고 해결용) */
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -522,8 +526,22 @@ body {
     align-items: center;
     font-size: 0.75rem;
     color: var(--text-muted);
+    gap: 0.5rem;
 }
 
+.bookmark-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.bookmark-btn:hover {
+    transform: scale(1.2);
+}
 /* 메인 콘텐츠 */
 .main-content {
     padding: 2rem;
@@ -546,7 +564,7 @@ body {
 
 .info-card {
     background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);  /* 0.05 → 0.1 */
     border-radius: 12px;
     padding: 1.5rem;
     line-height: 1.8;
@@ -572,7 +590,41 @@ body {
     background: var(--bg-secondary);
     transform: translateX(4px);
 }
+/* 모델 선택 */
+.model-selector {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 
+.model-selector label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 80px;
+}
+
+#model-select {
+    flex: 1;
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+#model-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
 .query-input-card {
     background: var(--bg-card);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -650,7 +702,7 @@ body {
 
 .table-container {
     background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     overflow: hidden;
 }
@@ -665,23 +717,24 @@ thead {
 }
 
 th {
-    padding: 0.75rem 1rem;
+    padding: 1rem;  /* 0.75rem → 1rem */
     text-align: left;
-    font-size: 0.75rem;
+    font-size: 0.875rem;  /* 0.75rem → 0.875rem */
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--text-primary);  /* 더 밝게 */
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 td {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1rem;  /* 0.75rem → 1rem */
+    font-size: 0.9375rem;  /* 0.875rem → 0.9375rem */
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
 }
 
 tbody tr:hover {
-    background: var(--bg-tertiary);
+    background: rgba(167, 139, 250, 0.1);
 }
 
 .collapsible-header {
@@ -696,15 +749,20 @@ tbody tr:hover {
     color: var(--text-muted);
     transition: var(--transition);
 }
-
 .diagram-wrapper {
     background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     padding: 2rem;
     margin-top: 1rem;
+    min-height: 500px;  /* 최소 높이 추가 */
 }
-
+#schema-diagram {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    min-height: 450px;
+}
 /* 스피너 */
 .spinner {
     width: 16px;
@@ -713,6 +771,20 @@ tbody tr:hover {
     border-top-color: white;
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
+}
+
+/* Mermaid 다이어그램 확대 */
+.mermaid {
+    display: flex;
+    justify-content: center;
+    transform: scale(1.5);  /* 1.5배 확대 */
+    transform-origin: top center;
+    padding: 3rem 0;
+}
+
+.mermaid svg {
+    max-width: 100% !important;
+    height: auto !important;
 }
 
 @keyframes spin {

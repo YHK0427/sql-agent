@@ -1,7 +1,33 @@
 # utils/schema_analyzer.py
 
 import sqlite3
+import json
+import os
+from datetime import datetime
 from utils.gemini_client import ask_gemini
+
+# 캐시 파일 경로
+CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'database')
+CACHE_FILE = os.path.join(CACHE_DIR, 'schema_cache.json')
+
+def _load_cache():
+    """캐시 파일 로드"""
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def _save_cache(cache):
+    """캐시 파일 저장"""
+    with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+
+def _get_db_modified_time(db_path):
+    """DB 파일 수정 시간"""
+    return os.path.getmtime(db_path)
 
 def get_database_schema(db_path):
     """
@@ -52,13 +78,28 @@ def get_database_schema(db_path):
         'table_info': table_info
     }
 
-def analyze_schema_with_llm(db_path):
+def analyze_schema_with_llm(db_path, model_name='gemini-pro'):
     """
-    LLM을 사용해 DB 스키마를 분석하고 설명 생성
+    LLM을 사용해 DB 스키마를 분석하고 설명 생성 (캐싱 적용)
     
     Returns:
         str: DB 구조에 대한 자연어 설명
     """
+    # 캐시 로드
+    cache = _load_cache()
+    db_name = os.path.basename(db_path)
+    db_mtime = _get_db_modified_time(db_path)
+    
+    # 캐시 확인
+    if db_name in cache:
+        cached_data = cache[db_name]
+        # DB 파일이 수정되지 않았고, 같은 모델이면 캐시 사용
+        if cached_data.get('mtime') == db_mtime and cached_data.get('model') == model_name:
+            print(f"[CACHE HIT] {db_name} 스키마 분석 캐시 사용")
+            return cached_data['analysis']
+    
+    # 캐시 미스 - LLM 호출
+    print(f"[CACHE MISS] {db_name} 스키마 분석 중... (LLM 호출)")
     schema_info = get_database_schema(db_path)
     
     prompt = f"""
@@ -75,16 +116,41 @@ def analyze_schema_with_llm(db_path):
 간결하고 명확하게 작성해주세요.
 """
     
-    analysis = ask_gemini(prompt)
+    analysis = ask_gemini(prompt, model_name=model_name)
+    
+    # 캐시 저장
+    cache[db_name] = {
+        'analysis': analysis,
+        'mtime': db_mtime,
+        'model': model_name,
+        'cached_at': datetime.now().isoformat()
+    }
+    _save_cache(cache)
+    
     return analysis
 
-def suggest_queries_with_llm(db_path):
+def suggest_queries_with_llm(db_path, model_name='gemini-pro'):
     """
-    LLM을 사용해 이 DB에서 할 수 있는 유용한 질문 예시 생성
+    LLM을 사용해 이 DB에서 할 수 있는 유용한 질문 예시 생성 (캐싱 적용)
     
     Returns:
         list: 추천 질문 리스트 (최대 5개)
     """
+    # 캐시 로드
+    cache = _load_cache()
+    db_name = os.path.basename(db_path)
+    db_mtime = _get_db_modified_time(db_path)
+    
+    # 캐시 확인
+    cache_key = f"{db_name}_queries"
+    if cache_key in cache:
+        cached_data = cache[cache_key]
+        if cached_data.get('mtime') == db_mtime and cached_data.get('model') == model_name:
+            print(f"[CACHE HIT] {db_name} 추천 질문 캐시 사용")
+            return cached_data['queries']
+    
+    # 캐시 미스 - LLM 호출
+    print(f"[CACHE MISS] {db_name} 추천 질문 생성 중... (LLM 호출)")
     schema_info = get_database_schema(db_path)
     
     prompt = f"""
@@ -108,7 +174,7 @@ def suggest_queries_with_llm(db_path):
 번호와 질문만 작성하고, 추가 설명은 불필요합니다.
 """
     
-    response = ask_gemini(prompt)
+    response = ask_gemini(prompt, model_name=model_name)
     
     # 응답을 리스트로 파싱
     lines = response.strip().split('\n')
@@ -120,15 +186,41 @@ def suggest_queries_with_llm(db_path):
             query = line.split('.', 1)[-1].strip() if '.' in line else line.lstrip('-').strip()
             queries.append(query)
     
-    return queries[:5]  # 최대 5개
+    queries = queries[:5]  # 최대 5개
+    
+    # 캐시 저장
+    cache[cache_key] = {
+        'queries': queries,
+        'mtime': db_mtime,
+        'model': model_name,
+        'cached_at': datetime.now().isoformat()
+    }
+    _save_cache(cache)
+    
+    return queries
 
 def generate_schema_diagram(db_path):
     """
-    DB 스키마를 Mermaid ER 다이어그램으로 변환
+    DB 스키마를 Mermaid ER 다이어그램으로 변환 (캐싱 적용)
     
     Returns:
         str: Mermaid 문법의 ER 다이어그램 코드
     """
+    # 캐시 로드
+    cache = _load_cache()
+    db_name = os.path.basename(db_path)
+    db_mtime = _get_db_modified_time(db_path)
+    
+    # 캐시 확인
+    cache_key = f"{db_name}_diagram"
+    if cache_key in cache:
+        cached_data = cache[cache_key]
+        if cached_data.get('mtime') == db_mtime:
+            print(f"[CACHE HIT] {db_name} 다이어그램 캐시 사용")
+            return cached_data['diagram']
+    
+    # 캐시 미스 - 다이어그램 생성
+    print(f"[CACHE MISS] {db_name} 다이어그램 생성 중...")
     schema_info = get_database_schema(db_path)
     
     mermaid = "erDiagram\n"
@@ -151,7 +243,7 @@ def generate_schema_diagram(db_path):
         
         mermaid += "    }\n"
     
-    # FK 관계 추출 (PRAGMA foreign_key_list 사용)
+    # FK 관계 추출
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
@@ -160,14 +252,39 @@ def generate_schema_diagram(db_path):
         fks = cursor.fetchall()
         
         for fk in fks:
-            # fk: (id, seq, table, from, to, on_update, on_delete, match)
             ref_table = fk[2]  # 참조 테이블
-            from_col = fk[3]   # 현재 테이블의 FK 컬럼
-            to_col = fk[4]     # 참조 테이블의 PK 컬럼
-            
-            # Mermaid 관계 표현: 현재테이블 ||--o{ 참조테이블 : "관계명"
             mermaid += f'    {ref_table} ||--o{{ {table_name} : "has"\n'
     
     conn.close()
     
+    # 캐시 저장
+    cache[cache_key] = {
+        'diagram': mermaid,
+        'mtime': db_mtime,
+        'cached_at': datetime.now().isoformat()
+    }
+    _save_cache(cache)
+    
     return mermaid
+
+def clear_cache(db_name=None):
+    """
+    캐시 삭제 (DB 수정 시 수동 호출용)
+    
+    Args:
+        db_name: 특정 DB만 삭제 (None이면 전체 삭제)
+    """
+    cache = _load_cache()
+    
+    if db_name:
+        # 특정 DB 캐시만 삭제
+        keys_to_delete = [k for k in cache.keys() if k.startswith(db_name)]
+        for key in keys_to_delete:
+            del cache[key]
+        print(f"[CACHE] {db_name} 캐시 삭제됨")
+    else:
+        # 전체 캐시 삭제
+        cache = {}
+        print("[CACHE] 전체 캐시 삭제됨")
+    
+    _save_cache(cache)
