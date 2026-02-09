@@ -11,6 +11,7 @@ AI 기반 투명한 SQL 분석 플랫폼 - LLM을 활용한 자연어 기반 데
 
 Glass-Box SQL Agent는 "투명성(Transparency)"을 핵심 가치로 하는 AI 기반 SQL 쿼리 생성 도구입니다. 
 일반적인 블랙박스 AI와 달리, LLM의 사고 과정(Chain-of-Thought)과 생성된 SQL을 모두 공개하여 사용자가 결과를 검증하고 신뢰할 수 있도록 설계되었습니다.
+개발직군이 아닌 타 마케팅 직군 같은 데이터를 다루어야만 하는 부서에서 어렵지 않게 sql을 모르더라고 데이터를 다룰 수 있게 해줍니다.
 
 ### 🎯 핵심 기능
 
@@ -275,7 +276,7 @@ prompt = f"""
 
 [Your Name]
 - GitHub: [@YHK0427](https://github.com/YHK0427)
-- Email: bleacj10905@gmail.com
+- Email: bleach10905@gmail.com
 
 ---
 
@@ -289,5 +290,5 @@ prompt = f"""
 ---
 
 ⭐ 이 프로젝트가 도움이 되었다면 Star를 눌러주세요!
-```
+
 
