@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Database Selection{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 text-center mb-5">
+        <h1 class="display-4">데이터베이스 선택</h1>
+        <p class="lead text-muted">분석하고 싶은 데이터베이스를 선택하세요</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for db_key, db_info in databases.items() %}
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-1 mb-3">{{ db_info.icon }}</div>
+                <h5 class="card-title">{{ db_info.name }}</h5>
+                <p class="card-text text-muted">{{ db_info.description }}</p>
+                <a href="{{ url_for('dashboard', db_name=db_key) }}" class="btn btn-primary">
+                    대시보드 열기
+                </a>
+                <button class="btn btn-sm btn-outline-danger mt-2 delete-db-btn" 
+                        data-db-name="{{ db_key }}">
+                    🗑️ 삭제
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <!-- DB 추가 카드 (placeholder) -->
+<div class="col-md-4">
+        <div class="card h-100 shadow-sm" style="border: 2px dashed #ccc;">
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                <div class="display-1 mb-3 text-muted">➕</div>
+                <h5 class="card-title text-muted">새 데이터베이스</h5>
+                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addDbModal">
+                    추가하기
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DB 추가 모달 -->
+<div class="modal fade" id="addDbModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">새 데이터베이스 추가</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addDbForm">
+                    <div class="mb-3">
+                        <label class="form-label">DB Key (영문/숫자/_만 사용)</label>
+                        <input type="text" class="form-control" id="db_key" required placeholder="예: sales_2024">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">DB 이름</label>
+                        <input type="text" class="form-control" id="db_name" required placeholder="예: 2024 매출 데이터">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">설명</label>
+                        <textarea class="form-control" id="db_description" rows="2" placeholder="이 DB에 대한 간단한 설명"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">아이콘 (이모지)</label>
+                        <input type="text" class="form-control" id="db_icon" maxlength="2" placeholder="📊">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" id="submitAddDb">추가</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.delete-db-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const dbName = this.getAttribute('data-db-name');
+        
+        if (confirm(`정말 "${dbName}" 데이터베이스를 삭제하시겠습니까?`)) {
+            fetch(`/delete_db/${dbName}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('삭제되었습니다.');
+                    location.reload();
+                } else {
+                    alert('삭제 실패: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('오류 발생: ' + error);
+            });
+        }
+    });
+});
+// DB 추가
+document.getElementById('submitAddDb').addEventListener('click', function() {
+    const dbKey = document.getElementById('db_key').value.trim();
+    const dbName = document.getElementById('db_name').value.trim();
+    const dbDescription = document.getElementById('db_description').value.trim();
+    const dbIcon = document.getElementById('db_icon').value.trim() || '📁';
+    
+    if (!dbKey || !dbName) {
+        alert('DB Key와 이름은 필수입니다.');
+        return;
+    }
+    
+    fetch('/add_db', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            db_key: dbKey,
+            db_name: dbName,
+            db_description: dbDescription,
+            db_icon: dbIcon
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('추가 실패: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('오류 발생: ' + error);
+    });
+});
+</script>
+{% endblock %}

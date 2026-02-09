@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}{{ db_info.name }} Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>{{ db_info.icon }} {{ db_info.name }}</h2>
+        <p class="text-muted">{{ db_info.description }}</p>
+        <a href="/" class="btn btn-sm btn-outline-secondary">← 돌아가기</a>
+    </div>
+</div>
+
+<!-- DB 구조 분석 섹션 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">📊 데이터베이스 구조 분석</h5>
+            </div>
+            <div class="card-body">
+                <div id="schema-analysis" class="text-muted">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">로딩 중...</span>
+                    </div>
+                    LLM이 DB 구조를 분석하는 중...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 추천 질문 섹션 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">💡 이런 질문을 해볼 수 있어요</h5>
+            </div>
+            <div class="card-body">
+                <div id="suggested-queries" class="text-muted">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">로딩 중...</span>
+                    </div>
+                    추천 질문 생성 중...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 질의 입력 섹션 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">🔍 자연어 질의</h5>
+            </div>
+            <div class="card-body">
+                <textarea class="form-control mb-3" id="user-query" rows="3" 
+                          placeholder="예: 지난달 매출 TOP 5 상품은?"></textarea>
+                <button class="btn btn-primary" id="generate-sql-btn">
+                    <span id="generate-btn-text">SQL 생성하기</span>
+                    <span id="generate-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SQL 생성 결과 섹션 -->
+<div class="row mb-4" id="sql-result-section" style="display: none;">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">💭 AI의 사고 과정</h6>
+            </div>
+            <div class="card-body">
+                <div id="ai-reasoning" style="white-space: pre-wrap;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">📝 생성된 SQL</h6>
+            </div>
+            <div class="card-body">
+                <pre id="generated-sql" class="bg-light p-3" style="border-radius: 5px;"></pre>
+                <button class="btn btn-success mt-2" id="execute-sql-btn">
+                    <span id="execute-btn-text">실행하기</span>
+                    <span id="execute-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 결과 테이블 섹션 -->
+<div class="row" id="result-section" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">📋 쿼리 결과</h6>
+            </div>
+            <div class="card-body">
+                <div id="query-result" class="table-responsive"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const dbName = "{{ db_name }}";
+let currentSQL = "";
+
+// 페이지 로드 시 스키마 분석 & 추천 질문 자동 로드
+window.addEventListener('DOMContentLoaded', function() {
+    loadSchemaAnalysis();
+    loadSuggestedQueries();
+});
+
+// 스키마 분석 로드
+function loadSchemaAnalysis() {
+    fetch(`/api/analyze_schema/${dbName}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('schema-analysis').innerHTML = 
+                    data.analysis.replace(/\n/g, '<br>');
+            } else {
+                document.getElementById('schema-analysis').innerHTML = 
+                    '<span class="text-danger">분석 실패</span>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('schema-analysis').innerHTML = 
+                '<span class="text-danger">오류 발생: ' + error + '</span>';
+        });
+}
+
+// 추천 질문 로드
+function loadSuggestedQueries() {
+    fetch(`/api/suggest_queries/${dbName}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.queries.length > 0) {
+                let html = '<ul class="list-group">';
+                data.queries.forEach(query => {
+                    html += `<li class="list-group-item list-group-item-action suggested-query" style="cursor: pointer;">
+                        ${query}
+                    </li>`;
+                });
+                html += '</ul>';
+                document.getElementById('suggested-queries').innerHTML = html;
+                
+                // 클릭 시 질문 입력창에 자동 입력
+                document.querySelectorAll('.suggested-query').forEach(item => {
+                    item.addEventListener('click', function() {
+                        document.getElementById('user-query').value = this.textContent.trim();
+                    });
+                });
+            } else {
+                document.getElementById('suggested-queries').innerHTML = 
+                    '<span class="text-muted">추천 질문이 없습니다.</span>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('suggested-queries').innerHTML = 
+                '<span class="text-danger">오류 발생: ' + error + '</span>';
+        });
+}
+
+// SQL 생성
+document.getElementById('generate-sql-btn').addEventListener('click', function() {
+    const question = document.getElementById('user-query').value.trim();
+    
+    if (!question) {
+        alert('질문을 입력해주세요.');
+        return;
+    }
+    
+    // 로딩 표시
+    document.getElementById('generate-btn-text').classList.add('d-none');
+    document.getElementById('generate-spinner').classList.remove('d-none');
+    this.disabled = true;
+    
+    fetch(`/api/generate_sql/${dbName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: question })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // 로딩 해제
+        document.getElementById('generate-btn-text').classList.remove('d-none');
+        document.getElementById('generate-spinner').classList.add('d-none');
+        document.getElementById('generate-sql-btn').disabled = false;
+        
+        if (data.success) {
+            currentSQL = data.sql;
+            document.getElementById('ai-reasoning').textContent = data.reasoning;
+            document.getElementById('generated-sql').textContent = data.sql;
+            document.getElementById('sql-result-section').style.display = 'flex';
+            document.getElementById('result-section').style.display = 'none';
+        } else {
+            alert('SQL 생성 실패: ' + data.message);
+        }
+    })
+    .catch(error => {
+        document.getElementById('generate-btn-text').classList.remove('d-none');
+        document.getElementById('generate-spinner').classList.add('d-none');
+        document.getElementById('generate-sql-btn').disabled = false;
+        alert('오류 발생: ' + error);
+    });
+});
+
+// SQL 실행
+document.getElementById('execute-sql-btn').addEventListener('click', function() {
+    if (!currentSQL) {
+        alert('먼저 SQL을 생성해주세요.');
+        return;
+    }
+    
+    // 로딩 표시
+    document.getElementById('execute-btn-text').classList.add('d-none');
+    document.getElementById('execute-spinner').classList.remove('d-none');
+    this.disabled = true;
+    
+    fetch(`/api/execute_sql/${dbName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql: currentSQL })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // 로딩 해제
+        document.getElementById('execute-btn-text').classList.remove('d-none');
+        document.getElementById('execute-spinner').classList.add('d-none');
+        document.getElementById('execute-sql-btn').disabled = false;
+        
+        if (data.success) {
+            displayResults(data.columns, data.rows);
+        } else {
+            alert('SQL 실행 실패: ' + data.error);
+        }
+    })
+    .catch(error => {
+        document.getElementById('execute-btn-text').classList.remove('d-none');
+        document.getElementById('execute-spinner').classList.add('d-none');
+        document.getElementById('execute-sql-btn').disabled = false;
+        alert('오류 발생: ' + error);
+    });
+});
+
+// 결과 테이블 렌더링
+function displayResults(columns, rows) {
+    let html = '<table class="table table-striped table-hover">';
+    
+    // 헤더
+    html += '<thead class="table-dark"><tr>';
+    columns.forEach(col => {
+        html += `<th>${col}</th>`;
+    });
+    html += '</tr></thead>';
+    
+    // 데이터
+    html += '<tbody>';
+    if (rows.length === 0) {
+        html += `<tr><td colspan="${columns.length}" class="text-center text-muted">결과가 없습니다.</td></tr>`;
+    } else {
+        rows.forEach(row => {
+            html += '<tr>';
+            row.forEach(cell => {
+                html += `<td>${cell !== null ? cell : '<span class="text-muted">NULL</span>'}</td>`;
+            });
+            html += '</tr>';
+        });
+    }
+    html += '</tbody></table>';
+    
+    document.getElementById('query-result').innerHTML = html;
+    document.getElementById('result-section').style.display = 'block';
+    
+    // 결과 섹션으로 스크롤
+    document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

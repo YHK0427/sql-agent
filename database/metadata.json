@@ -1,0 +1,17 @@
+{
+  "ecommerce": {
+    "name": "E-Commerce",
+    "description": "전자상거래 데이터베이스",
+    "icon": "🛒"
+  },
+  "hr_management": {
+    "name": "HR Management",
+    "description": "인사관리 데이터베이스",
+    "icon": "👥"
+  },
+  "dsd": {
+    "name": "sdsfs",
+    "description": "svsdfdgb",
+    "icon": "👌"
+  }
+}

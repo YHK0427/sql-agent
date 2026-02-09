@@ -1,0 +1,23 @@
+/* static/css/style.css */
+
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+pre {
+    font-size: 0.9em;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.list-group-item-action:hover {
+    background-color: #e9ecef;
+}
