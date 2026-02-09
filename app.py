@@ -158,7 +158,60 @@ def generate_sql(db_name):
 @app.route('/api/execute_sql/<db_name>', methods=['POST'])
 def execute_sql_api(db_name):
     """SQL 실행"""
+    from utils.query_generator import execute_sql, save_to_history
+    
+    databases = load_databases()
+    if db_name not in databases:
+        return jsonify({'success': False, 'message': 'DB not found'}), 404
+    
+    data = request.get_json()
+    sql_query = data.get('sql', '').strip()
+    question = data.get('question', '').strip()  # 질문도 함께 받기
+    
+    if not sql_query:
+        return jsonify({'success': False, 'message': 'SQL을 입력해주세요.'}), 400
+    
+    db_path = databases[db_name]['file']
+    result = execute_sql(db_path, sql_query)
+    
+    # 히스토리 저장
+    if result['success']:
+        save_to_history(db_name, question, sql_query, len(result['rows']))
+    
+    return jsonify(result)
+
+
+@app.route('/api/history/<db_name>')
+def get_history_api(db_name):
+    """쿼리 히스토리 조회"""
+    from utils.query_generator import get_history
+    
+    history = get_history(db_name)
+    return jsonify({'success': True, 'history': history})
+
+@app.route('/api/bookmark/<int:history_id>', methods=['POST'])
+def toggle_bookmark_api(history_id):
+    """북마크 토글"""
+    from utils.query_generator import toggle_bookmark
+    
+    success = toggle_bookmark(history_id)
+    return jsonify({'success': success})
+
+@app.route('/api/export/<format>/<db_name>', methods=['POST'])
+def export_data(format, db_name):
+    """
+    쿼리 결과를 CSV 또는 Excel로 내보내기
+    
+    Args:
+        format: 'csv' 또는 'excel'
+        db_name: DB 이름
+    """
+    from flask import send_file
     from utils.query_generator import execute_sql
+    import csv
+    import io
+    from openpyxl import Workbook
+    from datetime import datetime
     
     databases = load_databases()
     if db_name not in databases:
@@ -173,6 +226,78 @@ def execute_sql_api(db_name):
     db_path = databases[db_name]['file']
     result = execute_sql(db_path, sql_query)
     
-    return jsonify(result)
+    if not result['success']:
+        return jsonify({'success': False, 'message': result['error']}), 400
+    
+    columns = result['columns']
+    rows = result['rows']
+    
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
+    if format == 'csv':
+        # CSV 생성
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(columns)
+        writer.writerows(rows)
+        
+        output.seek(0)
+        return send_file(
+            io.BytesIO(output.getvalue().encode('utf-8-sig')),  # UTF-8 BOM 추가 (한글 깨짐 방지)
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f'{db_name}_export_{timestamp}.csv'
+        )
+    
+    elif format == 'excel':
+        # Excel 생성
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Query Result"
+        
+        # 헤더
+        ws.append(columns)
+        
+        # 데이터
+        for row in rows:
+            ws.append(row)
+        
+        # 헤더 스타일
+        from openpyxl.styles import Font, PatternFill
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
+        
+        # 바이트 스트림으로 저장
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'{db_name}_export_{timestamp}.xlsx'
+        )
+    
+    else:
+        return jsonify({'success': False, 'message': 'Invalid format'}), 400
+
+
+@app.route('/api/schema_diagram/<db_name>')
+def get_schema_diagram(db_name):
+    """스키마 다이어그램 (Mermaid)"""
+    from utils.schema_analyzer import generate_schema_diagram
+    
+    databases = load_databases()
+    if db_name not in databases:
+        return jsonify({'success': False, 'message': 'DB not found'}), 404
+    
+    db_path = databases[db_name]['file']
+    diagram = generate_schema_diagram(db_path)
+    
+    return jsonify({'success': True, 'diagram': diagram})
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

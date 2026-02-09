@@ -121,3 +121,53 @@ def suggest_queries_with_llm(db_path):
             queries.append(query)
     
     return queries[:5]  # 최대 5개
+
+def generate_schema_diagram(db_path):
+    """
+    DB 스키마를 Mermaid ER 다이어그램으로 변환
+    
+    Returns:
+        str: Mermaid 문법의 ER 다이어그램 코드
+    """
+    schema_info = get_database_schema(db_path)
+    
+    mermaid = "erDiagram\n"
+    
+    # 각 테이블의 컬럼 정의
+    for table_name, table_data in schema_info['table_info'].items():
+        columns = table_data['columns']
+        
+        # 테이블 정의
+        mermaid += f"    {table_name} {{\n"
+        for col in columns:
+            col_id = col[0]  # column id
+            col_name = col[1]  # column name
+            col_type = col[2]  # data type
+            is_pk = col[5]  # primary key (1 or 0)
+            
+            # PK 표시
+            pk_marker = "PK" if is_pk else ""
+            mermaid += f"        {col_type} {col_name} {pk_marker}\n"
+        
+        mermaid += "    }\n"
+    
+    # FK 관계 추출 (PRAGMA foreign_key_list 사용)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    for table_name in schema_info['tables']:
+        cursor.execute(f"PRAGMA foreign_key_list({table_name})")
+        fks = cursor.fetchall()
+        
+        for fk in fks:
+            # fk: (id, seq, table, from, to, on_update, on_delete, match)
+            ref_table = fk[2]  # 참조 테이블
+            from_col = fk[3]   # 현재 테이블의 FK 컬럼
+            to_col = fk[4]     # 참조 테이블의 PK 컬럼
+            
+            # Mermaid 관계 표현: 현재테이블 ||--o{ 참조테이블 : "관계명"
+            mermaid += f'    {ref_table} ||--o{{ {table_name} : "has"\n'
+    
+    conn.close()
+    
+    return mermaid

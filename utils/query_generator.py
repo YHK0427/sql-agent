@@ -99,3 +99,106 @@ def execute_sql(db_path, sql_query):
             'success': False,
             'error': str(e)
         }
+def save_to_history(db_name, question, sql_query, result_rows=0):
+    """
+    쿼리 히스토리 저장
+    
+    Args:
+        db_name: DB 이름
+        question: 사용자 질문
+        sql_query: 생성된 SQL
+        result_rows: 결과 행 개수
+    """
+    from config import HISTORY_DB
+    import sqlite3
+    
+    try:
+        conn = sqlite3.connect(HISTORY_DB)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO query_history (db_name, question, sql_query, result_rows)
+            VALUES (?, ?, ?, ?)
+        ''', (db_name, question, sql_query, result_rows))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"히스토리 저장 실패: {e}")
+        return False
+
+def get_history(db_name=None, limit=50):
+    """
+    쿼리 히스토리 조회
+    
+    Args:
+        db_name: 특정 DB만 필터 (None이면 전체)
+        limit: 최대 개수
+    
+    Returns:
+        list: 히스토리 리스트
+    """
+    from config import HISTORY_DB
+    import sqlite3
+    
+    try:
+        conn = sqlite3.connect(HISTORY_DB)
+        cursor = conn.cursor()
+        
+        if db_name:
+            cursor.execute('''
+                SELECT id, db_name, question, sql_query, executed_at, is_bookmarked, result_rows
+                FROM query_history
+                WHERE db_name = ?
+                ORDER BY executed_at DESC
+                LIMIT ?
+            ''', (db_name, limit))
+        else:
+            cursor.execute('''
+                SELECT id, db_name, question, sql_query, executed_at, is_bookmarked, result_rows
+                FROM query_history
+                ORDER BY executed_at DESC
+                LIMIT ?
+            ''', (limit,))
+        
+        history = cursor.fetchall()
+        conn.close()
+        
+        return [
+            {
+                'id': row[0],
+                'db_name': row[1],
+                'question': row[2],
+                'sql_query': row[3],
+                'executed_at': row[4],
+                'is_bookmarked': row[5],
+                'result_rows': row[6]
+            }
+            for row in history
+        ]
+    except Exception as e:
+        print(f"히스토리 조회 실패: {e}")
+        return []
+
+def toggle_bookmark(history_id):
+    """북마크 토글"""
+    from config import HISTORY_DB
+    import sqlite3
+    
+    try:
+        conn = sqlite3.connect(HISTORY_DB)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE query_history
+            SET is_bookmarked = CASE WHEN is_bookmarked = 0 THEN 1 ELSE 0 END
+            WHERE id = ?
+        ''', (history_id,))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"북마크 토글 실패: {e}")
+        return False

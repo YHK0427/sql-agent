@@ -48,3 +48,5 @@ def load_databases():
 
 # 전역 변수로 사용
 DATABASES = load_databases()
+# 히스토리 DB 경로
+HISTORY_DB = os.path.join(DATABASE_DIR, 'query_history.db')
